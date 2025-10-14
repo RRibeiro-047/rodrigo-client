@@ -1,0 +1,20 @@
+[
+  {
+    "id": "44041765-387d-4892-8f9b-1d010d0ac2a1",
+    "nome": "Ricardo",
+    "telefone": "47999906900",
+    "data": "2025-10-15T08:00:00",
+    "servico": "Lavação Premium + Cera",
+    "observacoes": "Modelo: sandero | Tamanho: SEDAN | Total: R$ 130.00",
+    "createdAt": "2025-10-14T23:30:34.343Z"
+  },
+  {
+    "id": "7541a448-7f04-4762-b763-4928964117b0",
+    "nome": "Maria",
+    "telefone": "47999999999",
+    "data": "2025-10-15T08:00:00",
+    "servico": "Lavação Detalhada + Cera",
+    "observacoes": "Modelo: rampage | Tamanho: CAMINHONETE | Total: R$ 510.00",
+    "createdAt": "2025-10-14T23:31:44.375Z"
+  }
+]
