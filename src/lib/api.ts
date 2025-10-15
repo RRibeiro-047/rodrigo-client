@@ -11,7 +11,8 @@ export interface ApiAgendamento {
   createdAt?: string;
 }
 
-const BASE = (import.meta as any).env?.VITE_API_BASE_URL ?? "";
+const BASE_RAW = (import.meta as any).env?.VITE_API_BASE_URL ?? "";
+const BASE = BASE_RAW ? BASE_RAW.replace(/\/+$/, "") : "";
 
 export async function apiCreateAgendamento(payload: Omit<ApiAgendamento, "id" | "createdAt">): Promise<ApiAgendamento> {
   const res = await fetch(`${BASE}/api/agendamentos`, {
