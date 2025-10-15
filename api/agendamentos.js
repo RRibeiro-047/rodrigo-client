@@ -44,5 +44,23 @@ export default async function handler(req, res) {
     }
   }
 
+  if (req.method === 'DELETE') {
+    try {
+      const id = req.query?.id || (req.body && req.body.id);
+      if (!id) {
+        return res.status(400).json({ error: 'Informe o id para excluir (?id=...)' });
+      }
+      const before = LIST.length;
+      LIST = LIST.filter((item) => item.id !== id);
+      const removed = LIST.length < before;
+      return removed
+        ? res.status(200).json({ ok: true })
+        : res.status(404).json({ error: 'Agendamento não encontrado' });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Erro ao excluir agendamento' });
+    }
+  }
+
   return res.status(405).json({ error: 'Method not allowed' });
 }

@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Calendar, Clock, Car, Phone, DollarSign, Trash2, Sparkles } from 'lucide-react';
-import { Booking, deleteBooking } from '@/lib/storage';
+import { Booking } from '@/lib/storage';
+import { apiDeleteAgendamento } from '@/lib/api';
 import { sendConfirmationMessage, sendCompletionMessage } from '@/lib/whatsapp';
 import { toast } from '@/hooks/use-toast';
 
@@ -37,13 +38,20 @@ const BookingCard = ({ booking, onUpdate }: BookingCardProps) => {
     onUpdate();
   };
 
-  const handleDelete = () => {
-    if (deleteBooking(booking.id)) {
+  const handleDelete = async () => {
+    try {
+      await apiDeleteAgendamento(booking.id);
       toast({
         title: 'Agendamento Excluído',
         description: 'O agendamento foi removido com sucesso.',
       });
       onUpdate();
+    } catch (e: any) {
+      toast({
+        title: 'Erro ao excluir',
+        description: e?.message || 'Tente novamente mais tarde.',
+        variant: 'destructive',
+      });
     }
   };
 

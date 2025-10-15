@@ -35,3 +35,12 @@ export async function apiListAgendamentos(): Promise<ApiAgendamento[]> {
   }
   return res.json();
 }
+
+export async function apiDeleteAgendamento(id: string): Promise<void> {
+  const url = `${BASE}/api/agendamentos?id=${encodeURIComponent(id)}`;
+  const res = await fetch(url, { method: "DELETE" });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Falha ao excluir agendamento: ${res.status} ${text}`);
+  }
+}

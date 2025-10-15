@@ -3,7 +3,7 @@
 
 const ADMIN_CREDENTIALS = {
   username: 'carlach',
-  password: 'adminrodrigo2025'
+  password: 'carlachjoinvillerodrigo'
 };
 
 const SESSION_KEY = 'carlach_admin_session';
