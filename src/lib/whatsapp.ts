@@ -1,18 +1,32 @@
 import { Booking } from './storage';
 
 export const sendWhatsAppMessage = (phone: string, message: string) => {
-  // Remove caracteres não numéricos do telefone
   const cleanPhone = phone.replace(/\D/g, '');
-  
-  // Adiciona o código do país se não tiver (assumindo Brasil +55)
   const fullPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
-  
-  // Codifica a mensagem para URL
   const encodedMessage = encodeURIComponent(message);
-  
-  // Abre o WhatsApp Web/App
   const whatsappUrl = `https://wa.me/${fullPhone}?text=${encodedMessage}`;
-  window.open(whatsappUrl, '_blank');
+
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  try {
+    const win = window.open(whatsappUrl, '_blank', 'noopener');
+    if (win) return;
+  } catch {}
+
+  try {
+    const a = document.createElement('a');
+    a.href = whatsappUrl;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    return;
+  } catch {}
+
+  try {
+    window.location.href = whatsappUrl;
+  } catch {}
 };
 
 export const sendConfirmationMessage = (booking: Booking) => {

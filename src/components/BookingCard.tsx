@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Calendar, Clock, Car, Phone, DollarSign, Trash2, Sparkles } from 'lucide-react';
-import { Booking, updateBookingStatus, deleteBooking } from '@/lib/storage';
+import { Booking, deleteBooking } from '@/lib/storage';
 import { sendConfirmationMessage, sendCompletionMessage } from '@/lib/whatsapp';
 import { toast } from '@/hooks/use-toast';
 
@@ -18,26 +18,23 @@ const BookingCard = ({ booking, onUpdate }: BookingCardProps) => {
   const [status, setStatus] = useState(booking.status);
 
   const handleStatusChange = (newStatus: Booking['status']) => {
-    const updated = updateBookingStatus(booking.id, newStatus);
-    if (updated) {
-      setStatus(newStatus);
-      
-      if (newStatus === 'confirmado') {
-        sendConfirmationMessage(booking);
-        toast({
-          title: 'Status Atualizado',
-          description: 'Mensagem de confirmação enviada via WhatsApp.',
-        });
-      } else if (newStatus === 'finalizado') {
-        sendCompletionMessage(booking);
-        toast({
-          title: 'Agendamento Finalizado',
-          description: 'Mensagem de conclusão enviada via WhatsApp.',
-        });
-      }
-      
-      onUpdate();
+    setStatus(newStatus);
+
+    if (newStatus === 'confirmado') {
+      sendConfirmationMessage(booking);
+      toast({
+        title: 'Status Atualizado',
+        description: 'Mensagem de confirmação enviada via WhatsApp.',
+      });
+    } else if (newStatus === 'finalizado') {
+      sendCompletionMessage(booking);
+      toast({
+        title: 'Agendamento Finalizado',
+        description: 'Mensagem de conclusão enviada via WhatsApp.',
+      });
     }
+
+    onUpdate();
   };
 
   const handleDelete = () => {
