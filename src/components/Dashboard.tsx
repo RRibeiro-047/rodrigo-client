@@ -30,10 +30,10 @@ const Dashboard = () => {
     try {
       const apiItems = await apiListAgendamentos();
       const mapped: Booking[] = apiItems.map((a) => {
-        // data/time
-        const dt = new Date(a.data);
-        const date = isNaN(dt.getTime()) ? '' : dt.toISOString().slice(0, 10);
-        const time = isNaN(dt.getTime()) ? '' : dt.toISOString().slice(11, 16);
+        // data/time: parse directly to preserve client-selected local time
+        const raw = typeof a.data === 'string' ? a.data : '';
+        const date = raw.slice(0, 10);
+        const time = raw.slice(11, 16);
         const fromObs = parseFromObservacoes(a.observacoes);
         return {
           id: a.id,

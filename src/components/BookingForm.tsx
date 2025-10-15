@@ -6,8 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Card } from '@/components/ui/card';
 import { Calendar, Clock, Car, Phone, User, AlertCircle } from 'lucide-react';
-import { Booking, getBookedTimesForDate } from '@/lib/storage';
-import { apiCreateAgendamento } from '@/lib/api';
+import { Booking } from '@/lib/storage';
+import { apiCreateAgendamento, apiListAgendamentos } from '@/lib/api';
 import { calculateTotal, getAvailableServices } from '@/lib/pricing';
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -34,18 +34,31 @@ const BookingForm = ({ onBookingCreated }: BookingFormProps) => {
   const availableServices = getAvailableServices(carSize);
   const totalValue = serviceType ? calculateTotal(serviceType, carSize, waxApplication) : 0;
 
-  // Atualiza horários ocupados quando a data mudar
+  // Atualiza horários ocupados quando a data mudar (via API, preservando horário selecionado pelo cliente)
   useEffect(() => {
-    if (date) {
-      const booked = getBookedTimesForDate(date);
-      setBookedTimes(booked);
-      // Se o horário selecionado não está mais disponível, limpa a seleção
-      if (time && booked.includes(time)) {
-        setTime('');
+    let cancelled = false;
+    const run = async () => {
+      if (!date) {
+        setBookedTimes([]);
+        return;
       }
-    } else {
-      setBookedTimes([]);
-    }
+      try {
+        const items = await apiListAgendamentos();
+        const times = items
+          .filter((a) => typeof a.data === 'string' && a.data.slice(0, 10) === date)
+          .map((a) => a.data.slice(11, 16));
+        if (!cancelled) {
+          setBookedTimes(times);
+          if (time && times.includes(time)) {
+            setTime('');
+          }
+        }
+      } catch {
+        if (!cancelled) setBookedTimes([]);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
   }, [date]);
 
   // Filtra horários disponíveis
