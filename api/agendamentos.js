@@ -1,9 +1,4 @@
-import { Redis } from '@upstash/redis';
-
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
-});
+import { kv } from '@vercel/kv';
 
 const APPOINTMENTS_KEY = 'appointments';
 
@@ -26,7 +21,7 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const appointments = await redis.get(APPOINTMENTS_KEY) || [];
+      const appointments = await kv.get(APPOINTMENTS_KEY) || [];
       return res.status(200).json(appointments);
     }
 
@@ -39,10 +34,10 @@ export default async function handler(req, res) {
         });
       }
 
-      const appointments = await redis.get(APPOINTMENTS_KEY) || [];
+      const appointments = await kv.get(APPOINTMENTS_KEY) || [];
       
       const newAppointment = {
-        id: generateId(), // Corrigido: usando função própria
+        id: generateId(),
         nome,
         telefone,
         data,
@@ -52,7 +47,7 @@ export default async function handler(req, res) {
       };
 
       appointments.push(newAppointment);
-      await redis.set(APPOINTMENTS_KEY, appointments);
+      await kv.set(APPOINTMENTS_KEY, appointments);
 
       return res.status(201).json(newAppointment);
     }
@@ -64,14 +59,14 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Informe o id para excluir' });
       }
 
-      const appointments = await redis.get(APPOINTMENTS_KEY) || [];
+      const appointments = await kv.get(APPOINTMENTS_KEY) || [];
       const filteredAppointments = appointments.filter(item => item.id !== id);
       
       if (filteredAppointments.length === appointments.length) {
         return res.status(404).json({ error: 'Agendamento não encontrado' });
       }
 
-      await redis.set(APPOINTMENTS_KEY, filteredAppointments);
+      await kv.set(APPOINTMENTS_KEY, filteredAppointments);
       return res.status(200).json({ ok: true });
     }
 
