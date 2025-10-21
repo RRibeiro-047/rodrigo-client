@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Calendar, Clock, Car, Phone, DollarSign, Trash2, Sparkles } from 'lucide-react';
 import { Booking } from '@/lib/storage';
-import { apiDeleteAgendamento } from '@/lib/api';
+import { apiDeleteAgendamento, apiUpdateAgendamentoStatus } from '@/lib/api';
 import { sendConfirmationMessage, sendCompletionMessage } from '@/lib/whatsapp';
 import { toast } from '@/hooks/use-toast';
 
@@ -18,24 +18,43 @@ interface BookingCardProps {
 const BookingCard = ({ booking, onUpdate }: BookingCardProps) => {
   const [status, setStatus] = useState(booking.status);
 
-  const handleStatusChange = (newStatus: Booking['status']) => {
-    setStatus(newStatus);
+  const handleStatusChange = async (newStatus: Booking['status']) => {
+    try {
+      // Atualiza no banco de dados primeiro
+      await apiUpdateAgendamentoStatus(booking.id, newStatus);
+      
+      // Atualiza o estado local
+      setStatus(newStatus);
 
-    if (newStatus === 'confirmado') {
-      sendConfirmationMessage(booking);
+      // Envia mensagens do WhatsApp
+      if (newStatus === 'confirmado') {
+        sendConfirmationMessage(booking);
+        toast({
+          title: 'Status Atualizado',
+          description: 'Mensagem de confirmação enviada via WhatsApp.',
+        });
+      } else if (newStatus === 'finalizado') {
+        sendCompletionMessage(booking);
+        toast({
+          title: 'Agendamento Finalizado',
+          description: 'Mensagem de conclusão enviada via WhatsApp.',
+        });
+      } else {
+        toast({
+          title: 'Status Atualizado',
+          description: `Status alterado para ${newStatus}.`,
+        });
+      }
+
+      // Recarrega apenas se necessário (evita requisições desnecessárias)
+      onUpdate();
+    } catch (error: any) {
       toast({
-        title: 'Status Atualizado',
-        description: 'Mensagem de confirmação enviada via WhatsApp.',
-      });
-    } else if (newStatus === 'finalizado') {
-      sendCompletionMessage(booking);
-      toast({
-        title: 'Agendamento Finalizado',
-        description: 'Mensagem de conclusão enviada via WhatsApp.',
+        title: 'Erro ao atualizar status',
+        description: error?.message || 'Tente novamente mais tarde.',
+        variant: 'destructive',
       });
     }
-
-    onUpdate();
   };
 
   const handleDelete = async () => {

@@ -45,7 +45,7 @@ const Dashboard = () => {
           waxApplication: /cera/i.test(a.servico),
           date,
           time,
-          status: 'pendente',
+          status: a.status || 'pendente',
           totalValue: fromObs.totalValue ?? 0,
           createdAt: a.createdAt ?? new Date().toISOString(),
         };

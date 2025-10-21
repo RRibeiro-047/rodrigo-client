@@ -1,5 +1,6 @@
 import { kv } from '@vercel/kv';
 
+
 const APPOINTMENTS_KEY = 'appointments';
 
 // Função para gerar ID único
@@ -11,7 +12,7 @@ export default async function handler(req, res) {
   // CORS headers
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     return res.status(204).end();
   }
@@ -43,6 +44,7 @@ export default async function handler(req, res) {
         data,
         servico,
         observacoes: observacoes || '',
+        status: 'pendente',
         createdAt: new Date().toISOString(),
       };
 
@@ -50,6 +52,27 @@ export default async function handler(req, res) {
       await kv.set(APPOINTMENTS_KEY, appointments);
 
       return res.status(201).json(newAppointment);
+    }
+
+    if (req.method === 'PUT') {
+      const { id, status } = req.body || {};
+      
+      if (!id || !status) {
+        return res.status(400).json({ error: 'Informe o id e status para atualizar' });
+      }
+
+      const appointments = await kv.get(APPOINTMENTS_KEY) || [];
+      const appointmentIndex = appointments.findIndex(item => item.id === id);
+      
+      if (appointmentIndex === -1) {
+        return res.status(404).json({ error: 'Agendamento não encontrado' });
+      }
+
+      appointments[appointmentIndex].status = status;
+      appointments[appointmentIndex].updatedAt = new Date().toISOString();
+      
+      await kv.set(APPOINTMENTS_KEY, appointments);
+      return res.status(200).json(appointments[appointmentIndex]);
     }
 
     if (req.method === 'DELETE') {

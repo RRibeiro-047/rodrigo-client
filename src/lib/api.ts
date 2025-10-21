@@ -8,7 +8,9 @@ export interface ApiAgendamento {
   data: string; // ISO or 'YYYY-MM-DDTHH:mm:ss'
   servico: string;
   observacoes?: string;
+  status?: string;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 const BASE_RAW = (import.meta as any).env?.VITE_API_BASE_URL ?? "";
@@ -32,6 +34,19 @@ export async function apiListAgendamentos(): Promise<ApiAgendamento[]> {
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`Falha ao listar agendamentos: ${res.status} ${text}`);
+  }
+  return res.json();
+}
+
+export async function apiUpdateAgendamentoStatus(id: string, status: string): Promise<ApiAgendamento> {
+  const res = await fetch(`${BASE}/api/agendamentos`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, status }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Falha ao atualizar agendamento: ${res.status} ${text}`);
   }
   return res.json();
 }
