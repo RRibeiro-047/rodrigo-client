@@ -7,6 +7,11 @@ const redis = new Redis({
 
 const APPOINTMENTS_KEY = 'appointments';
 
+// Função para gerar ID único
+function generateId() {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
 export default async function handler(req, res) {
   // CORS headers
   if (req.method === 'OPTIONS') {
@@ -37,7 +42,7 @@ export default async function handler(req, res) {
       const appointments = await redis.get(APPOINTMENTS_KEY) || [];
       
       const newAppointment = {
-        id: crypto.randomUUID(),
+        id: generateId(), // Corrigido: usando função própria
         nome,
         telefone,
         data,
