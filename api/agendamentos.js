@@ -1,14 +1,17 @@
-// WARNING: This implementation keeps data in-memory per serverless instance.
-// It is not durable storage. For production persistence, use a database
-// (e.g., Vercel Postgres, Neon, Supabase, PlanetScale) or Vercel KV/Blob.
+import { Redis } from '@upstash/redis';
 
-let LIST = [];
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+});
+
+const APPOINTMENTS_KEY = 'appointments';
 
 export default async function handler(req, res) {
-  // Basic CORS for cross-origin if needed
+  // CORS headers
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     return res.status(204).end();
   }
@@ -16,19 +19,25 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/json');
 
-  if (req.method === 'GET') {
-    return res.status(200).json(LIST);
-  }
+  try {
+    if (req.method === 'GET') {
+      const appointments = await redis.get(APPOINTMENTS_KEY) || [];
+      return res.status(200).json(appointments);
+    }
 
-  if (req.method === 'POST') {
-    try {
+    if (req.method === 'POST') {
       const { nome, telefone, data, servico, observacoes } = req.body || {};
+      
       if (!nome || !telefone || !data || !servico) {
-        return res.status(400).json({ error: 'Campos obrigatórios: nome, telefone, data, servico' });
+        return res.status(400).json({ 
+          error: 'Campos obrigatórios: nome, telefone, data, servico' 
+        });
       }
-      const id = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`);
-      const item = {
-        id,
+
+      const appointments = await redis.get(APPOINTMENTS_KEY) || [];
+      
+      const newAppointment = {
+        id: crypto.randomUUID(),
         nome,
         telefone,
         data,
@@ -36,31 +45,34 @@ export default async function handler(req, res) {
         observacoes: observacoes || '',
         createdAt: new Date().toISOString(),
       };
-      LIST.push(item);
-      return res.status(201).json(item);
-    } catch (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'Erro ao salvar agendamento' });
-    }
-  }
 
-  if (req.method === 'DELETE') {
-    try {
+      appointments.push(newAppointment);
+      await redis.set(APPOINTMENTS_KEY, appointments);
+
+      return res.status(201).json(newAppointment);
+    }
+
+    if (req.method === 'DELETE') {
       const id = req.query?.id || (req.body && req.body.id);
+      
       if (!id) {
-        return res.status(400).json({ error: 'Informe o id para excluir (?id=...)' });
+        return res.status(400).json({ error: 'Informe o id para excluir' });
       }
-      const before = LIST.length;
-      LIST = LIST.filter((item) => item.id !== id);
-      const removed = LIST.length < before;
-      return removed
-        ? res.status(200).json({ ok: true })
-        : res.status(404).json({ error: 'Agendamento não encontrado' });
-    } catch (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'Erro ao excluir agendamento' });
-    }
-  }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+      const appointments = await redis.get(APPOINTMENTS_KEY) || [];
+      const filteredAppointments = appointments.filter(item => item.id !== id);
+      
+      if (filteredAppointments.length === appointments.length) {
+        return res.status(404).json({ error: 'Agendamento não encontrado' });
+      }
+
+      await redis.set(APPOINTMENTS_KEY, filteredAppointments);
+      return res.status(200).json({ ok: true });
+    }
+
+    return res.status(405).json({ error: 'Method not allowed' });
+  } catch (error) {
+    console.error('Erro na API:', error);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
+  }
 }
