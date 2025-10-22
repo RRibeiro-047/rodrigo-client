@@ -4,36 +4,28 @@ export const sendWhatsAppMessage = (phone: string, message: string) => {
   const cleanPhone = phone.replace(/\D/g, '');
   const fullPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
   const encodedMessage = encodeURIComponent(message);
+  
+  // Usar WhatsApp Business API ou fallback para web
+  const whatsappUrl = `https://wa.me/${fullPhone}?text=${encodedMessage}`;
 
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
-  // Tentar WhatsApp Desktop primeiro (mais confiável)
-  const desktopUrl = `whatsapp://send?phone=${fullPhone}&text=${encodedMessage}`;
-  const webUrl = `https://wa.me/${fullPhone}?text=${encodedMessage}`;
-
-  const tryOpenWhatsApp = () => {
-    // Método 1: Tentar WhatsApp Desktop
+  // Função para tentar abrir o WhatsApp com diferentes métodos
+  const openWhatsApp = () => {
+    // Método 1: Tentar abrir em nova aba
     try {
-      window.location.href = desktopUrl;
-      return true;
-    } catch (error) {
-      console.log('WhatsApp Desktop não disponível');
-    }
-
-    // Método 2: Tentar WhatsApp Web
-    try {
-      const win = window.open(webUrl, '_blank', 'noopener,noreferrer');
+      const win = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
       if (win && !win.closed) {
         return true;
       }
     } catch (error) {
-      console.log('WhatsApp Web falhou');
+      console.log('Método 1 falhou:', error);
     }
 
-    // Método 3: Fallback com link temporário
+    // Método 2: Criar link temporário
     try {
       const a = document.createElement('a');
-      a.href = webUrl;
+      a.href = whatsappUrl;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
       a.style.display = 'none';
@@ -42,25 +34,32 @@ export const sendWhatsAppMessage = (phone: string, message: string) => {
       document.body.removeChild(a);
       return true;
     } catch (error) {
-      console.log('Fallback falhou');
+      console.log('Método 2 falhou:', error);
+    }
+
+    // Método 3: Usar location.href como último recurso
+    try {
+      window.location.href = whatsappUrl;
+      return true;
+    } catch (error) {
+      console.log('Método 3 falhou:', error);
     }
 
     return false;
   };
 
-  // Executar com delay para evitar rate limiting
+  // Tentar abrir com delay para evitar rate limiting
   setTimeout(() => {
-    const success = tryOpenWhatsApp();
+    const success = openWhatsApp();
     if (!success) {
-      // Último recurso: mostrar número para copiar
-      const copyText = `Número: ${fullPhone}\nMensagem: ${decodeURIComponent(encodedMessage)}`;
-      navigator.clipboard.writeText(copyText).then(() => {
-        alert('WhatsApp não pôde ser aberto. As informações foram copiadas para a área de transferência.');
+      // Fallback: copiar número para área de transferência
+      navigator.clipboard.writeText(fullPhone).then(() => {
+        alert(`Não foi possível abrir o WhatsApp automaticamente. O número ${fullPhone} foi copiado para a área de transferência.`);
       }).catch(() => {
-        alert(`WhatsApp não disponível. Número: ${fullPhone}`);
+        alert(`Não foi possível abrir o WhatsApp. Número: ${fullPhone}`);
       });
     }
-  }, 200);
+  }, 100);
 };
 
 export const sendConfirmationMessage = (booking: Booking) => {
