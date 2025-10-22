@@ -34,28 +34,28 @@ const BookingCard = ({ booking, onUpdate }: BookingCardProps) => {
       await apiUpdateAgendamentoStatus(booking.id, newStatus);
       
       // Atualiza o estado local
-      setStatus(newStatus);
+    setStatus(newStatus);
 
       // Envia mensagens do WhatsApp com delay para garantir que a janela abra
-      if (newStatus === 'confirmado') {
+    if (newStatus === 'confirmado') {
         // Pequeno delay para garantir que o status foi salvo
         setTimeout(() => {
           try {
-            sendConfirmationMessage(booking);
+      sendConfirmationMessage(booking);
           } catch (error) {
             console.error('Erro ao abrir WhatsApp:', error);
           }
         }, 300);
         
-        toast({
+      toast({
           title: '✅ Status Atualizado',
           description: 'WhatsApp será aberto para enviar confirmação ao cliente.',
-        });
-      } else if (newStatus === 'finalizado') {
+      });
+    } else if (newStatus === 'finalizado') {
         // Pequeno delay para garantir que o status foi salvo
         setTimeout(() => {
           try {
-            sendCompletionMessage(booking);
+      sendCompletionMessage(booking);
           } catch (error) {
             console.error('Erro ao abrir WhatsApp:', error);
           }

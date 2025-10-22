@@ -21,12 +21,12 @@ export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
 
   try {
-    if (req.method === 'GET') {
+  if (req.method === 'GET') {
       const appointments = await kv.get(APPOINTMENTS_KEY) || [];
       return res.status(200).json(appointments);
-    }
+  }
 
-    if (req.method === 'POST') {
+  if (req.method === 'POST') {
       const { nome, telefone, data, servico, observacoes } = req.body || {};
       
       if (!nome || !telefone || !data || !servico) {
@@ -73,9 +73,9 @@ export default async function handler(req, res) {
       
       await kv.set(APPOINTMENTS_KEY, appointments);
       return res.status(200).json(appointments[appointmentIndex]);
-    }
+  }
 
-    if (req.method === 'DELETE') {
+  if (req.method === 'DELETE') {
       const id = req.query?.id || (req.body && req.body.id);
       
       if (!id) {
