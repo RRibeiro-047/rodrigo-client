@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Calendar, Clock, Car, Phone, DollarSign, Trash2, Sparkles } from 'lucide-react';
+import { Calendar, Clock, Car, Phone, DollarSign, Trash2, Sparkles, MessageCircle, Loader2 } from 'lucide-react';
 import { Booking } from '@/lib/storage';
 import { apiDeleteAgendamento, apiUpdateAgendamentoStatus } from '@/lib/api';
 import { sendConfirmationMessage, sendCompletionMessage } from '@/lib/whatsapp';
@@ -17,8 +17,18 @@ interface BookingCardProps {
 
 const BookingCard = ({ booking, onUpdate }: BookingCardProps) => {
   const [status, setStatus] = useState(booking.status);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Sincroniza o status quando o booking muda
+  useEffect(() => {
+    setStatus(booking.status);
+  }, [booking.status]);
 
   const handleStatusChange = async (newStatus: Booking['status']) => {
+    if (isUpdating) return; // Previne múltiplos cliques
+    
+    setIsUpdating(true);
+    
     try {
       // Atualiza no banco de dados primeiro
       await apiUpdateAgendamentoStatus(booking.id, newStatus);
@@ -26,18 +36,34 @@ const BookingCard = ({ booking, onUpdate }: BookingCardProps) => {
       // Atualiza o estado local
       setStatus(newStatus);
 
-      // Envia mensagens do WhatsApp
+      // Envia mensagens do WhatsApp com delay para garantir que a janela abra
       if (newStatus === 'confirmado') {
-        sendConfirmationMessage(booking);
+        // Pequeno delay para garantir que o status foi salvo
+        setTimeout(() => {
+          try {
+            sendConfirmationMessage(booking);
+          } catch (error) {
+            console.error('Erro ao abrir WhatsApp:', error);
+          }
+        }, 300);
+        
         toast({
-          title: 'Status Atualizado',
-          description: 'Mensagem de confirmação enviada via WhatsApp.',
+          title: '✅ Status Atualizado',
+          description: 'WhatsApp será aberto para enviar confirmação ao cliente.',
         });
       } else if (newStatus === 'finalizado') {
-        sendCompletionMessage(booking);
+        // Pequeno delay para garantir que o status foi salvo
+        setTimeout(() => {
+          try {
+            sendCompletionMessage(booking);
+          } catch (error) {
+            console.error('Erro ao abrir WhatsApp:', error);
+          }
+        }, 300);
+        
         toast({
-          title: 'Agendamento Finalizado',
-          description: 'Mensagem de conclusão enviada via WhatsApp.',
+          title: '🎉 Agendamento Finalizado',
+          description: 'WhatsApp será aberto para enviar mensagem de conclusão.',
         });
       } else {
         toast({
@@ -46,14 +72,18 @@ const BookingCard = ({ booking, onUpdate }: BookingCardProps) => {
         });
       }
 
-      // Recarrega apenas se necessário (evita requisições desnecessárias)
+      // Recarrega os dados
       onUpdate();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('Erro ao atualizar status:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Tente novamente mais tarde.';
       toast({
         title: 'Erro ao atualizar status',
-        description: error?.message || 'Tente novamente mais tarde.',
+        description: errorMessage,
         variant: 'destructive',
       });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -65,10 +95,12 @@ const BookingCard = ({ booking, onUpdate }: BookingCardProps) => {
         description: 'O agendamento foi removido com sucesso.',
       });
       onUpdate();
-    } catch (e: any) {
+    } catch (e: unknown) {
+      console.error('Erro ao excluir agendamento:', e);
+      const errorMessage = e instanceof Error ? e.message : 'Tente novamente mais tarde.';
       toast({
         title: 'Erro ao excluir',
-        description: e?.message || 'Tente novamente mais tarde.',
+        description: errorMessage,
         variant: 'destructive',
       });
     }
@@ -140,20 +172,35 @@ const BookingCard = ({ booking, onUpdate }: BookingCardProps) => {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border">
-        <Select value={status} onValueChange={(value: any) => handleStatusChange(value)}>
+        <Select 
+          value={status} 
+          onValueChange={(value: Booking['status']) => handleStatusChange(value)}
+          disabled={isUpdating}
+        >
           <SelectTrigger className="flex-1 bg-input border-border">
             <SelectValue />
+            {isUpdating && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
           </SelectTrigger>
           <SelectContent className="bg-popover border-border">
             <SelectItem value="pendente">Pendente</SelectItem>
-            <SelectItem value="confirmado">Confirmado</SelectItem>
-            <SelectItem value="finalizado">Finalizado</SelectItem>
+            <SelectItem value="confirmado">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4" />
+                Confirmado
+              </div>
+            </SelectItem>
+            <SelectItem value="finalizado">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4" />
+                Finalizado
+              </div>
+            </SelectItem>
           </SelectContent>
         </Select>
 
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="icon">
+            <Button variant="destructive" size="icon" disabled={isUpdating}>
               <Trash2 className="w-4 h-4" />
             </Button>
           </AlertDialogTrigger>
