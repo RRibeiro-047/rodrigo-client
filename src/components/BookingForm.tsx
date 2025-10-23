@@ -59,7 +59,7 @@ const BookingForm = ({ onBookingCreated }: BookingFormProps) => {
     };
     run();
     return () => { cancelled = true; };
-  }, [date]);
+  }, [date, time]);
 
   // Filtra horários disponíveis
   const availableHours = AVAILABLE_HOURS.filter(hour => !bookedTimes.includes(hour));
@@ -86,10 +86,10 @@ const BookingForm = ({ onBookingCreated }: BookingFormProps) => {
         servico: serviceType + (waxApplication ? ' + Cera' : ''),
         observacoes: `Modelo: ${carModel} | Tamanho: ${carSize.toUpperCase()} | Total: R$ ${totalValue.toFixed(2)}`,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         title: 'Erro ao enviar agendamento',
-        description: err?.message || 'Tente novamente mais tarde.',
+        description: err instanceof Error ? err.message : 'Tente novamente mais tarde.',
         variant: 'destructive',
       });
       return;
@@ -176,7 +176,7 @@ const BookingForm = ({ onBookingCreated }: BookingFormProps) => {
 
         <div className="space-y-2">
           <Label htmlFor="carSize">Tamanho do Veículo *</Label>
-          <Select value={carSize} onValueChange={(value: any) => {
+          <Select value={carSize} onValueChange={(value: 'sedan' | 'suv' | 'caminhonete') => {
             setCarSize(value);
             setServiceType(''); // Reset service when car size changes
           }}>

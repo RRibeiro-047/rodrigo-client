@@ -19,16 +19,19 @@ const Dashboard = () => {
     const sizeMatch = obs.match(/Tamanho:\s*([A-Z]+)/i);
     if (sizeMatch) {
       const s = sizeMatch[1].toLowerCase();
-      if (s === 'sedan' || s === 'suv' || s === 'caminhonete') result.carSize = s as any;
+      if (s === 'sedan' || s === 'suv' || s === 'caminhonete') result.carSize = s as 'sedan' | 'suv' | 'caminhonete';
     }
-    const totalMatch = obs.match(/Total:\s*R\$\s*([0-9]+[\.,]?[0-9]*)/i);
+    const totalMatch = obs.match(/Total:\s*R\$\s*([0-9]+[.,]?[0-9]*)/i);
     if (totalMatch) result.totalValue = parseFloat(totalMatch[1].replace(',', '.'));
     return result;
   };
 
   // Função para formatar data em português
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // Converter string YYYY-MM-DD para Date
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month é 0-indexed
+    
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -112,7 +115,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     loadBookings();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filteredBookings = bookings.filter(booking => {
     const matchesSearch = 
