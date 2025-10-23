@@ -15,10 +15,6 @@ export const services: ServicePrice[] = [
   {
     name: 'Lavação Premium',
     prices: { sedan: 90, suv: 110, caminhonete: 140 }
-  },
-  {
-    name: 'Lavação Detalhada',
-    prices: { sedan: 300, suv: 350, caminhonete: 450 }
   }
 ];
 

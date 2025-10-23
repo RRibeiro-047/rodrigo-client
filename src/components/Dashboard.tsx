@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Calendar as CalendarIcon } from 'lucide-react';
+import { Search, Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { Booking } from '@/lib/storage';
 import { apiListAgendamentos } from '@/lib/api';
 import BookingCard from './BookingCard';
@@ -26,6 +26,57 @@ const Dashboard = () => {
     return result;
   };
 
+  // Função para formatar data em português
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    // Resetar horas para comparação apenas de data
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const tomorrowOnly = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
+    
+    if (dateOnly.getTime() === todayOnly.getTime()) {
+      return 'Hoje';
+    } else if (dateOnly.getTime() === tomorrowOnly.getTime()) {
+      return 'Amanhã';
+    } else {
+      return date.toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long'
+      });
+    }
+  };
+
+  // Função para agrupar agendamentos por data
+  const groupBookingsByDate = (bookings: Booking[]) => {
+    const grouped = bookings.reduce((acc, booking) => {
+      const date = booking.date;
+      if (!acc[date]) {
+        acc[date] = [];
+      }
+      acc[date].push(booking);
+      return acc;
+    }, {} as Record<string, Booking[]>);
+
+    // Ordenar agendamentos por horário dentro de cada dia
+    Object.keys(grouped).forEach(date => {
+      grouped[date].sort((a, b) => a.time.localeCompare(b.time));
+    });
+
+    // Ordenar as datas
+    const sortedDates = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+    
+    return sortedDates.map(date => ({
+      date,
+      formattedDate: formatDate(date),
+      bookings: grouped[date]
+    }));
+  };
+
   const loadBookings = async () => {
     try {
       const apiItems = await apiListAgendamentos();
@@ -45,7 +96,9 @@ const Dashboard = () => {
           waxApplication: /cera/i.test(a.servico),
           date,
           time,
-          status: a.status || 'pendente',
+          status: (['pendente', 'confirmado', 'finalizado'].includes(a.status) 
+            ? a.status as 'pendente' | 'confirmado' | 'finalizado' 
+            : 'pendente'),
           totalValue: fromObs.totalValue ?? 0,
           createdAt: a.createdAt ?? new Date().toISOString(),
         };
@@ -72,6 +125,7 @@ const Dashboard = () => {
     return matchesSearch && matchesFilter;
   });
 
+  const groupedBookings = groupBookingsByDate(filteredBookings);
   const pendingCount = bookings.filter(b => b.status === 'pendente').length;
 
   return (
@@ -143,7 +197,7 @@ const Dashboard = () => {
         />
       </div>
 
-      {filteredBookings.length === 0 ? (
+      {groupedBookings.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground text-lg">
             {searchTerm || filter !== 'all' 
@@ -152,13 +206,38 @@ const Dashboard = () => {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredBookings.map((booking) => (
-            <BookingCard
-              key={booking.id}
-              booking={booking}
-              onUpdate={loadBookings}
-            />
+        <div className="space-y-8">
+          {groupedBookings.map((dayGroup) => (
+            <div key={dayGroup.date} className="space-y-4">
+              {/* Header do dia */}
+              <div className="flex items-center gap-3 pb-2 border-b border-border">
+                <CalendarIcon className="w-5 h-5 text-primary" />
+                <h3 className="text-xl font-semibold text-foreground capitalize">
+                  {dayGroup.formattedDate}
+                </h3>
+                <Badge variant="secondary" className="ml-auto">
+                  {dayGroup.bookings.length} agendamento{dayGroup.bookings.length !== 1 ? 's' : ''}
+                </Badge>
+              </div>
+
+              {/* Lista de agendamentos do dia */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {dayGroup.bookings.map((booking) => (
+                  <div key={booking.id} className="relative">
+                    {/* Indicador de horário */}
+                    <div className="absolute -left-2 top-4 w-4 h-4 bg-primary rounded-full flex items-center justify-center z-10">
+                      <Clock className="w-2.5 h-2.5 text-primary-foreground" />
+                    </div>
+                    <div className="ml-4">
+                      <BookingCard
+                        booking={booking}
+                        onUpdate={loadBookings}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
