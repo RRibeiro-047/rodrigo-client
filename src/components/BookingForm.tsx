@@ -184,9 +184,9 @@ const BookingForm = ({ onBookingCreated }: BookingFormProps) => {
               <SelectValue placeholder="Selecione o tamanho" />
             </SelectTrigger>
             <SelectContent className="bg-popover border-border">
-              <SelectItem value="sedan">Sedan</SelectItem>
+              <SelectItem value="sedan">Hatch/Sedan</SelectItem>
               <SelectItem value="suv">SUV</SelectItem>
-              <SelectItem value="caminhonete">Caminhonete</SelectItem>
+              <SelectItem value="caminhonete">Caminhonete/7Lugares</SelectItem>
             </SelectContent>
           </Select>
         </div>
