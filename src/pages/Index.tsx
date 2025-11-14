@@ -68,8 +68,8 @@ const Index = () => {
       <footer className="border-t border-border mt-12">
         <div className="container mx-auto px-4 py-6 text-center text-muted-foreground">
           <p>© 2025 Carlach Detailing - Todos os direitos reservados</p>
-          <p className="text-sm mt-2">Segunda a Sexta - 08:00 às 18:00</p>
-          <p className="text-sm mt-2">Sábado - 08:00 às 16:30</p>
+          <p className="text-sm mt-2">Segunda a Sábado - 08:00 às 18:00</p>
+          <p className="text-sm mt-2">Domingo e Feriado - Fechado</p>
           
       <div className="bottom-6 right-6 p-5">
         <Button
